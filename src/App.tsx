@@ -203,12 +203,44 @@ function App(): React.ReactElement {
 
 	const isAnyGenerating = busyPanelCount > 0;
 
-	// Update pool stats periodically
+	// Update pool stats periodically (only if changed)
 	useEffect(() => {
 		const interval = setInterval(() => {
 			if (workerPoolRef.current) {
-				setPoolStats(workerPoolRef.current.getStats());
-				setPoolSnapshot(workerPoolRef.current.getSnapshot());
+				const newStats = workerPoolRef.current.getStats();
+				const newSnapshot = workerPoolRef.current.getSnapshot();
+
+				setPoolStats((prev) => {
+					if (
+						prev &&
+						prev.maxPoolSize === newStats.maxPoolSize &&
+						prev.currentWorkers === newStats.currentWorkers &&
+						prev.activeWorkers === newStats.activeWorkers &&
+						prev.queueLength === newStats.queueLength
+					) {
+						return prev;
+					}
+					return newStats;
+				});
+
+				setPoolSnapshot((prev) => {
+					if (
+						prev &&
+						prev.activeWorkers === newSnapshot.activeWorkers &&
+						prev.idleWorkers === newSnapshot.idleWorkers &&
+						prev.queueLength === newSnapshot.queueLength &&
+						prev.pendingRequests === newSnapshot.pendingRequests &&
+						prev.workers.length === newSnapshot.workers.length &&
+						prev.workers.every(
+							(w, i) =>
+								w.active === newSnapshot.workers[i]?.active &&
+								w.requestId === newSnapshot.workers[i]?.requestId,
+						)
+					) {
+						return prev;
+					}
+					return newSnapshot;
+				});
 			}
 		}, 500);
 		return () => clearInterval(interval);
@@ -346,201 +378,212 @@ function App(): React.ReactElement {
 	);
 
 	return (
-		<div className="app-container">
-			<h1>
-				<span>uPlot</span> Performance Demo
-			</h1>
+		<div className="app-layout">
+			{/* Left Sidebar - Controls */}
+			<aside className="sidebar">
+				<div className="sidebar__header">
+					<h1>
+						<span>uPlot</span> Performance Demo
+					</h1>
+				</div>
 
-			<div className="controls">
-				<div className="control-group">
-					<label htmlFor="dataFormat">Data Format</label>
-					<select
-						id="dataFormat"
-						value={dataFormat}
-						onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-							setDataFormat(e.target.value as DataFormat)
-						}
-						className="data-format-select"
+				<div className="sidebar__controls">
+					<div className="control-group">
+						<label htmlFor="dataFormat">Data Format</label>
+						<select
+							id="dataFormat"
+							value={dataFormat}
+							onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+								setDataFormat(e.target.value as DataFormat)
+							}
+							className="data-format-select"
+						>
+							<option value="float32">Float32</option>
+							<option value="float64">Float64</option>
+							<option value="json">JSON {"{x, y}"}</option>
+						</select>
+					</div>
+
+					<div className="control-group">
+						<label htmlFor="numWorkers">Workers</label>
+						<div className="slider-row">
+							<input
+								id="numWorkers"
+								type="range"
+								min="1"
+								max={hardwareLimit}
+								value={inputMaxWorkers}
+								onChange={(e: ChangeEvent<HTMLInputElement>) =>
+									setInputMaxWorkers(parseInt(e.target.value))
+								}
+							/>
+							<span className="slider-value">{inputMaxWorkers}</span>
+						</div>
+					</div>
+
+					<div className="control-group">
+						<label htmlFor="numPoints">Points</label>
+						<div className="slider-row">
+							<input
+								id="numPoints"
+								type="range"
+								min="0"
+								max={POINT_VALUES.length - 1}
+								step="1"
+								value={inputPointsIndex}
+								onChange={(e: ChangeEvent<HTMLInputElement>) =>
+									setInputPointsIndex(parseInt(e.target.value))
+								}
+							/>
+							<span className="slider-value">
+								{POINT_VALUES[inputPointsIndex].toLocaleString()}
+							</span>
+						</div>
+					</div>
+
+					<div className="control-group">
+						<label htmlFor="numLines">Lines</label>
+						<div className="slider-row">
+							<input
+								id="numLines"
+								type="range"
+								min="10"
+								max="500"
+								step="10"
+								value={inputNumLines}
+								onChange={(e: ChangeEvent<HTMLInputElement>) =>
+									setInputNumLines(parseInt(e.target.value))
+								}
+							/>
+							<span className="slider-value">{inputNumLines}</span>
+						</div>
+					</div>
+
+					<div className="control-group">
+						<label htmlFor="numPanels">Panels</label>
+						<div className="slider-row">
+							<input
+								id="numPanels"
+								type="range"
+								min="1"
+								max="100"
+								value={inputNumPanels}
+								onChange={(e: ChangeEvent<HTMLInputElement>) =>
+									setInputNumPanels(parseInt(e.target.value))
+								}
+							/>
+							<span className="slider-value">{inputNumPanels}</span>
+						</div>
+					</div>
+
+					<button
+						className="regenerate-all-btn"
+						onClick={handleRegenerateAll}
+						disabled={isAnyGenerating}
 					>
-						<option value="float32">Float32</option>
-						<option value="float64">Float64</option>
-						<option value="json">JSON {"{x, y}"}</option>
-					</select>
+						{isAnyGenerating
+							? `Generating (${numPanels - busyPanelCount}/${numPanels})...`
+							: "Regenerate All"}
+					</button>
 				</div>
 
-				<div className="control-group">
-					<label htmlFor="numWorkers">Workers</label>
-					<div className="slider-row">
-						<input
-							id="numWorkers"
-							type="range"
-							min="1"
-							max={hardwareLimit}
-							value={inputMaxWorkers}
-							onChange={(e: ChangeEvent<HTMLInputElement>) =>
-								setInputMaxWorkers(parseInt(e.target.value))
-							}
-						/>
-						<span className="slider-value">{inputMaxWorkers}</span>
+				{poolError && (
+					<div className="pool-error" role="alert">
+						{poolError}
 					</div>
-				</div>
+				)}
+			</aside>
 
-				<div className="control-group">
-					<label htmlFor="numPoints">Points</label>
-					<div className="slider-row">
-						<input
-							id="numPoints"
-							type="range"
-							min="0"
-							max={POINT_VALUES.length - 1}
-							step="1"
-							value={inputPointsIndex}
-							onChange={(e: ChangeEvent<HTMLInputElement>) =>
-								setInputPointsIndex(parseInt(e.target.value))
-							}
-						/>
-						<span className="slider-value">
-							{POINT_VALUES[inputPointsIndex].toLocaleString()}
-						</span>
-					</div>
-				</div>
-
-				<div className="control-group">
-					<label htmlFor="numLines">Lines</label>
-					<div className="slider-row">
-						<input
-							id="numLines"
-							type="range"
-							min="10"
-							max="500"
-							step="10"
-							value={inputNumLines}
-							onChange={(e: ChangeEvent<HTMLInputElement>) =>
-								setInputNumLines(parseInt(e.target.value))
-							}
-						/>
-						<span className="slider-value">{inputNumLines}</span>
-					</div>
-				</div>
-
-				<div className="control-group">
-					<label htmlFor="numPanels">Panels</label>
-					<div className="slider-row">
-						<input
-							id="numPanels"
-							type="range"
-							min="1"
-							max="100"
-							value={inputNumPanels}
-							onChange={(e: ChangeEvent<HTMLInputElement>) =>
-								setInputNumPanels(parseInt(e.target.value))
-							}
-						/>
-						<span className="slider-value">{inputNumPanels}</span>
-					</div>
-				</div>
-
-				<button
-					className="regenerate-all-btn"
-					onClick={handleRegenerateAll}
-					disabled={isAnyGenerating}
-				>
-					{isAnyGenerating
-						? `Generating (${numPanels - busyPanelCount}/${numPanels})...`
-						: "Regenerate All"}
-				</button>
-
-				<PoolStatsComponent stats={poolStats} />
-			</div>
-
-			{poolError && (
-				<div className="pool-error" role="alert">
-					{poolError}
-				</div>
-			)}
-
-			<section className="workers-card" aria-label="Workers">
-				<div className="workers-card__header">
-					<div className="workers-card__title">Workers</div>
-					<div className="workers-card__meta">
-						{poolSnapshot ? (
-							<>
-								<span>
-									Active: <strong>{poolSnapshot.activeWorkers}</strong>
-								</span>
-								<span>
-									Idle: <strong>{poolSnapshot.idleWorkers}</strong>
-								</span>
-								<span>
-									Queue: <strong>{poolSnapshot.queueLength}</strong>
-								</span>
-								<span>
-									Pending: <strong>{poolSnapshot.pendingRequests}</strong>
-								</span>
-							</>
-						) : (
-							<span>—</span>
-						)}
-					</div>
-				</div>
-
-				<div className="workers-grid" role="list">
-					{Array.from({ length: maxWorkers }).map((_, i) => {
-						const w = poolSnapshot?.workers?.[i];
-						const state = w ? (w.active ? "active" : "idle") : "unused";
-						const age =
-							w?.lastUsedMsAgo != null
-								? Math.round(w.lastUsedMsAgo / 100) / 10
-								: null;
+			{/* Main Content - Plots Grid */}
+			<main className="main-content">
+				<div className="plots-grid">
+					{Array.from({ length: numPanels }).map((_, index) => {
+						const curveType = CURVE_TYPES[index % CURVE_TYPES.length];
 						return (
-							<div
-								key={i}
-								className={`worker-slot worker-slot--${state}`}
-								role="listitem"
+							<Profiler
+								key={index}
+								id={`plot-${index}`}
+								onRender={handleProfilerRender}
 							>
-								<div className="worker-slot__dot" />
-								<div className="worker-slot__label">W{i + 1}</div>
-								<div className="worker-slot__detail">
-									{w?.active ? (
-										<span>req {w.requestId ?? "—"}</span>
-									) : w ? (
-										<span>{age != null ? `${age}s ago` : "idle"}</span>
-									) : (
-										<span>unused</span>
-									)}
-								</div>
-							</div>
+								<PlotPanel
+									index={index}
+									title={curveType.charAt(0).toUpperCase() + curveType.slice(1)}
+									curveType={curveType}
+									numPoints={numPoints}
+									numLines={numLines}
+									dataFormat={dataFormat}
+									lineStyles={lineStyles}
+									workerPool={workerPoolRef.current}
+									regenerateToken={regenerateToken}
+									onStatusChange={handlePanelStatusChange}
+									profilerStats={profilerDataRef.current[index]}
+								/>
+							</Profiler>
 						);
 					})}
 				</div>
-			</section>
+			</main>
 
-			<div className="plots-grid">
-				{Array.from({ length: numPanels }).map((_, index) => {
-					const curveType = CURVE_TYPES[index % CURVE_TYPES.length];
-					return (
-						<Profiler
-							key={index}
-							id={`plot-${index}`}
-							onRender={handleProfilerRender}
-						>
-							<PlotPanel
-								index={index}
-								title={curveType.charAt(0).toUpperCase() + curveType.slice(1)}
-								curveType={curveType}
-								numPoints={numPoints}
-								numLines={numLines}
-								dataFormat={dataFormat}
-								lineStyles={lineStyles}
-								workerPool={workerPoolRef.current}
-								regenerateToken={regenerateToken}
-								onStatusChange={handlePanelStatusChange}
-								profilerStats={profilerDataRef.current[index]}
-							/>
-						</Profiler>
-					);
-				})}
-			</div>
+			{/* Footer - Workers Status */}
+			<footer className="app-footer">
+				<div className="footer-workers">
+					<div className="footer-workers__summary">
+						<span className="footer-workers__title">Workers</span>
+						{poolSnapshot ? (
+							<>
+								<span className="footer-stat">
+									<span className="footer-stat__label">Active</span>
+									<span className="footer-stat__value footer-stat__value--active">
+										{poolSnapshot.activeWorkers}
+									</span>
+								</span>
+								<span className="footer-stat">
+									<span className="footer-stat__label">Idle</span>
+									<span className="footer-stat__value footer-stat__value--idle">
+										{poolSnapshot.idleWorkers}
+									</span>
+								</span>
+								<span className="footer-stat">
+									<span className="footer-stat__label">Queue</span>
+									<span className="footer-stat__value">
+										{poolSnapshot.queueLength}
+									</span>
+								</span>
+								<span className="footer-stat">
+									<span className="footer-stat__label">Pending</span>
+									<span className="footer-stat__value">
+										{poolSnapshot.pendingRequests}
+									</span>
+								</span>
+							</>
+						) : (
+							<span className="footer-stat__value">—</span>
+						)}
+					</div>
+
+					<div className="footer-workers__slots">
+						{Array.from({ length: maxWorkers }).map((_, i) => {
+							const w = poolSnapshot?.workers?.[i];
+							const state = w ? (w.active ? "active" : "idle") : "unused";
+							return (
+								<div
+									key={i}
+									className={`footer-worker-dot footer-worker-dot--${state}`}
+									title={
+										w?.active
+											? `W${i + 1}: req ${w.requestId ?? "—"}`
+											: w
+												? `W${i + 1}: idle`
+												: `W${i + 1}: unused`
+									}
+								/>
+							);
+						})}
+					</div>
+				</div>
+
+				<PoolStatsComponent stats={poolStats} />
+			</footer>
 		</div>
 	);
 }

@@ -1,155 +1,67 @@
-.app-container {
-  width: 100%;
-  max-width: 100%;
-  padding: 28px 20px 36px;
+/* ============================================================================
+   App Layout - Sidebar + Main + Footer
+   ============================================================================ */
+
+.app-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    "sidebar main"
+    "footer footer";
   min-height: 100vh;
+  width: 100%;
 }
 
-.app-container h1 {
-  text-align: left;
-  margin: 0 0 16px 0;
-  color: var(--text-primary);
-  font-size: 28px;
+/* ============================================================================
+   Sidebar
+   ============================================================================ */
+
+.sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 24px 20px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar__header {
+  margin-bottom: 24px;
+}
+
+.sidebar__header h1 {
+  margin: 0;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.03em;
+  color: var(--text-primary);
+  line-height: 1.3;
 }
 
-.app-container h1 span {
+.sidebar__header h1 span {
   color: var(--brand-blue);
 }
 
-/* Controls Section */
-.controls {
+.sidebar__controls {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px 20px;
-  align-items: flex-end;
-  margin-bottom: 14px;
-  padding: 12px 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
+  flex-direction: column;
+  gap: 20px;
 }
 
-.pool-error {
-  margin: 10px 0 16px;
-  padding: 12px 14px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: 12px;
-  color: #7f1d1d;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.workers-card {
-  margin: 0 0 18px 0;
-  padding: 14px 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--shadow-sm);
-}
-
-.workers-card__header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.workers-card__title {
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--text-primary);
-}
-
-.workers-card__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 14px;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.workers-card__meta strong {
-  color: var(--text-primary);
-  font-weight: 800;
-}
-
-.workers-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
-}
-
-.worker-slot {
-  display: grid;
-  grid-template-columns: 12px 1fr;
-  grid-template-rows: auto auto;
-  column-gap: 8px;
-  row-gap: 2px;
-  padding: 10px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: #fff;
-}
-
-.worker-slot__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  margin-top: 3px;
-  background: rgba(17, 24, 39, 0.16);
-  box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.08);
-}
-
-.worker-slot__label {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--text-primary);
-}
-
-.worker-slot__detail {
-  grid-column: 2 / 3;
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.worker-slot--active {
-  border-color: rgba(43, 111, 247, 0.25);
-  background: rgba(43, 111, 247, 0.06);
-}
-.worker-slot--active .worker-slot__dot {
-  background: rgba(43, 111, 247, 0.95);
-  box-shadow: 0 0 0 3px rgba(43, 111, 247, 0.1);
-}
-
-.worker-slot--idle {
-  border-color: rgba(16, 185, 129, 0.22);
-  background: rgba(16, 185, 129, 0.06);
-}
-.worker-slot--idle .worker-slot__dot {
-  background: rgba(16, 185, 129, 0.85);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-}
-
-.worker-slot--unused {
-  background: var(--bg-muted);
-}
+/* ============================================================================
+   Control Groups (in sidebar)
+   ============================================================================ */
 
 .control-group {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
   gap: 8px;
-  width: 140px;
-  flex-shrink: 0;
 }
 
 .control-group label {
@@ -164,7 +76,6 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: 100%;
 }
 
 .slider-value {
@@ -253,13 +164,9 @@
   box-shadow: 0 0 0 3px rgba(43, 111, 247, 0.15);
 }
 
-.data-format-select option {
-  font-weight: 500;
-}
-
 /* Regenerate All Button */
 .regenerate-all-btn {
-  padding: 10px 14px;
+  padding: 12px 16px;
   background: var(--brand-orange);
   color: white;
   border: none;
@@ -270,6 +177,7 @@
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
   box-shadow: 0 6px 14px rgba(255, 122, 0, 0.18);
+  margin-top: 8px;
 }
 
 .regenerate-all-btn:hover:not(:disabled) {
@@ -288,15 +196,154 @@
   box-shadow: none;
 }
 
-/* Pool Stats */
+/* Pool Error */
+.pool-error {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 12px;
+  color: #7f1d1d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ============================================================================
+   Main Content Area
+   ============================================================================ */
+
+.main-content {
+  grid-area: main;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* Plots Grid */
+.plots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+@media (min-width: 1800px) {
+  .plots-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1400px) and (max-width: 1799px) {
+  .plots-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ============================================================================
+   App Footer - Workers Status
+   ============================================================================ */
+
+.app-footer {
+  grid-area: footer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 12px 24px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 8px rgba(17, 24, 39, 0.04);
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+}
+
+.footer-workers {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.footer-workers__summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.footer-workers__title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.footer-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-stat__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.footer-stat__value {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.footer-stat__value--active {
+  color: var(--brand-blue);
+}
+
+.footer-stat__value--idle {
+  color: #10b981;
+}
+
+.footer-workers__slots {
+  display: flex;
+  gap: 4px;
+  padding: 6px 10px;
+  background: var(--bg-muted);
+  border-radius: 8px;
+}
+
+.footer-worker-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(17, 24, 39, 0.12);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.footer-worker-dot--active {
+  background: var(--brand-blue);
+  box-shadow: 0 0 0 2px rgba(43, 111, 247, 0.2);
+}
+
+.footer-worker-dot--idle {
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+}
+
+.footer-worker-dot--unused {
+  background: rgba(17, 24, 39, 0.08);
+}
+
+/* Pool Stats in Footer */
 .pool-stats {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   background: var(--bg-muted);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 12px;
 }
 
@@ -337,80 +384,45 @@
   background: rgba(17, 24, 39, 0.28);
 }
 
-/* Plots Grid */
-.plots-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
-  width: 100%;
-}
+/* ============================================================================
+   Plot Card
+   ============================================================================ */
 
-@media (min-width: 1400px) {
-  .plots-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (min-width: 1000px) and (max-width: 1399px) {
-  .plots-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (min-width: 600px) and (max-width: 999px) {
-  .plots-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 599px) {
-  .plots-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .controls {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .control-group {
-    width: 100%;
-    justify-content: space-between;
-  }
-}
-
-/* Plot Card (standalone panel layout) */
 .plot-card {
   display: flex;
   flex-direction: column;
   width: 100%;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 14px;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .plot-card:hover {
   border-color: var(--border-strong);
   box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
 }
 
 .plot-card__header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  padding: 12px 14px 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(to bottom, #fff, rgba(249, 250, 251, 0.5));
+}
+
+.plot-card__header-spacer {
+  /* Empty spacer for grid alignment */
 }
 
 .plot-card__title {
   justify-self: center;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
@@ -419,25 +431,21 @@
 }
 
 .plot-card__regen {
-  padding: 8px 10px;
-  border-radius: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: #fff;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease,
-    transform 0.1s ease;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .plot-card__regen:hover:not(:disabled) {
   border-color: rgba(43, 111, 247, 0.45);
-  box-shadow: 0 0 0 4px rgba(43, 111, 247, 0.1);
-}
-
-.plot-card__regen:active:not(:disabled) {
-  transform: translateY(1px);
+  box-shadow: 0 0 0 3px rgba(43, 111, 247, 0.08);
+  color: var(--text-primary);
 }
 
 .plot-card__regen:disabled {
@@ -447,43 +455,91 @@
 }
 
 .plot-card__body {
-  padding: 12px 14px;
+  padding: 10px;
 }
 
-/* Plot Canvas - uPlot mounts here */
+/* Plot Canvas */
 .plot-canvas {
   width: 100%;
   aspect-ratio: 16 / 9;
   position: relative;
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
 }
 
+/* ============================================================================
+   Plot Card Footer - Stats Display
+   ============================================================================ */
+
 .plot-card__footer {
-  padding: 10px 14px 12px;
+  padding: 10px 12px;
   border-top: 1px solid var(--border);
-  background: linear-gradient(#fff, rgba(255, 255, 255, 0.92));
+  background: var(--bg-muted);
 }
 
 .plot-card__stats {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .plot-card__stat-total {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .plot-card__stat-detail {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.plot-card__stat-breakdown {
+  display: flex;
+  gap: 6px;
+}
+
+.plot-card__stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plot-card__stat-chip--gen {
+  background: rgba(255, 122, 0, 0.1);
+  color: #c2410c;
+}
+
+.plot-card__stat-chip--draw {
+  background: rgba(43, 111, 247, 0.1);
+  color: #1d4ed8;
+}
+
+.plot-card__stat-chip--paint {
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+}
+
+.plot-card__stat-chip--react {
+  background: rgba(124, 58, 237, 0.1);
+  color: #6d28d9;
+}
+
+.plot-card__stat-chip--memory {
+  background: rgba(17, 24, 39, 0.06);
+  color: var(--text-secondary);
+  margin-left: auto;
 }
 
 .plot-card__stat-placeholder {
@@ -492,6 +548,7 @@
   font-weight: 600;
 }
 
+/* Legacy stat classes (keeping for backward compat) */
 .plot-card__stat-react {
   font-size: 11px;
   font-weight: 700;
@@ -511,19 +568,10 @@
   margin-left: auto;
 }
 
-@media (max-width: 599px) {
-  .plot-canvas {
-    aspect-ratio: 4 / 3;
-  }
-}
+/* ============================================================================
+   Loading State
+   ============================================================================ */
 
-@media (min-width: 1400px) {
-  .plot-canvas {
-    aspect-ratio: 2 / 1;
-  }
-}
-
-/* Loading state */
 .plot-loading {
   position: absolute;
   inset: 0;
@@ -537,8 +585,8 @@
 }
 
 .plot-loading-spinner {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 3px solid var(--border);
   border-top-color: var(--brand-blue);
   border-radius: 50%;
@@ -556,9 +604,10 @@
   color: var(--text-muted);
 }
 
-/* (Old overlay controls removed; stats live in footer now) */
+/* ============================================================================
+   uPlot Overrides
+   ============================================================================ */
 
-/* uPlot layout */
 .plot-canvas .u-wrap {
   position: absolute !important;
   inset: 0 !important;
@@ -569,7 +618,6 @@
   position: absolute !important;
 }
 
-/* uPlot light styles */
 .plot-canvas .u-title {
   color: var(--text-primary) !important;
   font-size: 13px !important;
@@ -595,7 +643,84 @@
   font-size: 11px !important;
 }
 
-/* Grid lines */
 .plot-canvas .u-grid {
   stroke: rgba(229, 231, 235, 0.9) !important;
+}
+
+/* ============================================================================
+   Responsive - Mobile
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      "sidebar"
+      "main"
+      "footer";
+  }
+
+  .sidebar {
+    position: relative;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 16px;
+  }
+
+  .sidebar__controls {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .regenerate-all-btn {
+    grid-column: 1 / -1;
+  }
+
+  .main-content {
+    padding: 16px;
+  }
+
+  .plots-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plot-canvas {
+    aspect-ratio: 4 / 3;
+  }
+
+  .app-footer {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .footer-workers {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .footer-workers__summary {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar__controls {
+    grid-template-columns: 1fr;
+  }
+
+  .plot-card__stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .plot-card__stat-chip--memory {
+    margin-left: 0;
+  }
 }

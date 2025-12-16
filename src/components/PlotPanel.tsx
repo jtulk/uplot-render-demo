@@ -25,9 +25,10 @@ function formatBytes(bytes: number | null | undefined): string | null {
 
 interface FormattedStats {
 	total: string;
-	detail: string;
+	generateMs: number | null;
+	drawMs: number | null;
+	reactMs: number | null;
 	memory: string | null;
-	react: string | null;
 }
 
 function formatStats(
@@ -37,21 +38,26 @@ function formatStats(
 	if (!stats) return null;
 
 	if (typeof stats === "object") {
-		const { totalMs, generateMs, drawMs, paintMs, memoryBytes } = stats;
+		const { totalMs, generateMs, drawMs, memoryBytes } = stats;
 		if (typeof totalMs === "number") {
-			const parts = [`gen:${generateMs}ms`, `draw:${drawMs}ms`];
-			if (paintMs != null) parts.push(`paint:${paintMs}ms`);
 			return {
 				total: `${totalMs}ms`,
-				detail: parts.join(" • "),
+				generateMs: generateMs ?? null,
+				drawMs: drawMs ?? null,
+				reactMs: profilerStats?.actualDuration ?? null,
 				memory: formatBytes(memoryBytes),
-				react: profilerStats ? `react:${profilerStats.actualDuration}ms` : null,
 			};
 		}
 	}
 
 	if (typeof stats === "number") {
-		return { total: `${stats}ms`, detail: "", memory: null, react: null };
+		return {
+			total: `${stats}ms`,
+			generateMs: null,
+			drawMs: null,
+			reactMs: null,
+			memory: null,
+		};
 	}
 
 	return null;
@@ -270,6 +276,7 @@ export default function PlotPanel({
 
 			const drawEnd = performance.now();
 			const drawMs = Math.round(drawEnd - drawStart);
+			const totalMs = Math.round(drawEnd - startTime);
 
 			// Log data fingerprint to verify regeneration produces new data
 			const firstY = data[1]?.[0] ?? 0;
@@ -277,49 +284,21 @@ export default function PlotPanel({
 			console.log(
 				`[Panel ${index}] Data fingerprint: first=${firstY.toFixed(4)}, last=${lastY.toFixed(4)}, points=${data[0]?.length}`,
 			);
+			console.log(
+				`[Panel ${index}] Total: ${totalMs}ms (gen: ${generateMs}ms + draw: ${drawMs}ms)`,
+			);
 
-			// Measure paint time with DOUBLE rAF
-			// First rAF: schedules callback for next frame (before paint)
-			// Second rAF: schedules callback for frame AFTER the paint completes
-			requestAnimationFrame(() => {
-				if (!isMountedRef.current || runTokenRef.current !== thisToken) {
-					isRegeneratingRef.current = false;
-					return;
-				}
-				
-				// This runs before the first paint
-				const preFirstPaint = performance.now();
-				
-				requestAnimationFrame(() => {
-					if (!isMountedRef.current || runTokenRef.current !== thisToken) {
-						isRegeneratingRef.current = false;
-						return;
-					}
-					
-					// This runs after the first frame has been painted
-					const paintEnd = performance.now();
-					const totalMs = Math.round(paintEnd - startTime);
-					// Paint time is measured from after draw to after actual paint
-					const paintMs = Math.round(paintEnd - preFirstPaint);
-
-					console.log(
-						`[Panel ${index}] Total: ${totalMs}ms (gen: ${generateMs}ms + draw: ${drawMs}ms + paint: ${paintMs}ms)`,
-					);
-
-					setStats({
-						totalMs,
-						generateMs,
-						drawMs,
-						paintMs,
-						memoryBytes,
-					});
-
-					setIsLoading(false);
-					setIsGenerating(false);
-					reportStatus("idle");
-					isRegeneratingRef.current = false;
-				});
+			setStats({
+				totalMs,
+				generateMs,
+				drawMs,
+				memoryBytes,
 			});
+
+			setIsLoading(false);
+			setIsGenerating(false);
+			reportStatus("idle");
+			isRegeneratingRef.current = false;
 		} catch (error) {
 			console.error(`Panel ${index} error:`, error);
 			if (isMountedRef.current) {
@@ -441,14 +420,27 @@ export default function PlotPanel({
 					{formatted ? (
 						<>
 							<div className="plot-card__stat-total">{formatted.total}</div>
-							{formatted.detail && (
-								<div className="plot-card__stat-detail">{formatted.detail}</div>
-							)}
-							{formatted.react && (
-								<div className="plot-card__stat-react">{formatted.react}</div>
-							)}
+							<div className="plot-card__stat-breakdown">
+								{formatted.generateMs != null && (
+									<span className="plot-card__stat-chip plot-card__stat-chip--gen">
+										gen {formatted.generateMs}ms
+									</span>
+								)}
+								{formatted.drawMs != null && (
+									<span className="plot-card__stat-chip plot-card__stat-chip--draw">
+										draw {formatted.drawMs}ms
+									</span>
+								)}
+								{formatted.reactMs != null && (
+									<span className="plot-card__stat-chip plot-card__stat-chip--react">
+										react {formatted.reactMs}ms
+									</span>
+								)}
+							</div>
 							{formatted.memory && (
-								<div className="plot-card__stat-memory">{formatted.memory}</div>
+								<span className="plot-card__stat-chip plot-card__stat-chip--memory">
+									{formatted.memory}
+								</span>
 							)}
 						</>
 					) : (
