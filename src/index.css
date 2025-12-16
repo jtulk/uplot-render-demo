@@ -1,0 +1,93 @@
+:root {
+	/* Light dashboard theme (W&B-ish) */
+	--bg-page: #f6f7fb;
+	--bg-card: #ffffff;
+	--bg-muted: #f3f4f6;
+
+	--text-primary: #111827;
+	--text-secondary: #4b5563;
+	--text-muted: #6b7280;
+
+	--border: #e5e7eb;
+	--border-strong: #d1d5db;
+
+	--brand-orange: #ff7a00;
+	--brand-orange-hover: #f06f00;
+	--brand-blue: #2b6ff7;
+	--brand-blue-hover: #1f5fe0;
+
+	--shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.06);
+	--shadow-md: 0 10px 24px rgba(17, 24, 39, 0.08);
+
+	font-family:
+		ui-sans-serif,
+		system-ui,
+		-apple-system,
+		Segoe UI,
+		Roboto,
+		Helvetica,
+		Arial,
+		"Apple Color Emoji",
+		"Segoe UI Emoji";
+	line-height: 1.4;
+	font-weight: 400;
+
+	color-scheme: light;
+	color: var(--text-primary);
+	background-color: var(--bg-page);
+
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	min-width: 320px;
+	min-height: 100vh;
+	background:
+		radial-gradient(
+			1200px 800px at 20% -10%,
+			rgba(43, 111, 247, 0.1),
+			transparent 60%
+		),
+		radial-gradient(
+			900px 700px at 90% 0%,
+			rgba(255, 122, 0, 0.12),
+			transparent 55%
+		), var(--bg-page);
+}
+
+#root {
+	width: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+/* Subtle scrollbar */
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(17, 24, 39, 0.18);
+	border-radius: 999px;
+	border: 3px solid transparent;
+	background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(17, 24, 39, 0.26);
+	border: 3px solid transparent;
+	background-clip: content-box;
+}
