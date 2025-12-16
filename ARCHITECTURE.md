@@ -15,9 +15,10 @@ A comprehensive technical guide to understanding high-performance data visualiza
 7. [System Architecture](#system-architecture)
 8. [Data Flow Diagrams](#data-flow-diagrams)
 9. [Implementation Deep Dive](#implementation-deep-dive)
-10. [Pros and Cons Analysis](#pros-and-cons-analysis)
-11. [Performance Characteristics](#performance-characteristics)
-12. [Key Takeaways](#key-takeaways)
+10. [Memory Measurement: DevTools vs Reality](#memory-measurement-devtools-vs-reality)
+11. [Pros and Cons Analysis](#pros-and-cons-analysis)
+12. [Performance Characteristics](#performance-characteristics)
+13. [Key Takeaways](#key-takeaways)
 
 ---
 
@@ -470,7 +471,7 @@ console.log(buffer.byteLength); // 0
 
 ### Implementation in This Demo
 
-From `pointGenerator.worker.js`:
+From `pointGenerator.worker.ts`:
 
 ```javascript
 // Generate data in TypedArrays
@@ -494,7 +495,7 @@ self.postMessage(
 // After this line, x and ys are NEUTERED (unusable) in the worker
 ```
 
-From `workerPool.js` (receiving side):
+From `workerPool.ts` (receiving side):
 
 ```javascript
 worker.onmessage = (event) => {
@@ -519,22 +520,31 @@ worker.onmessage = (event) => {
 │                              APPLICATION LAYER                              │
 │                                                                             │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                           App.jsx                                    │   │
+│  │                           App.tsx                                    │   │
 │  │                                                                      │   │
 │  │  • React state management (numPoints, numLines, numPanels)          │   │
 │  │  • Debounced input handling                                         │   │
 │  │  • WorkerPool lifecycle management                                  │   │
-│  │  • uPlot instance creation and updates                              │   │
-│  │  • Performance metrics collection                                   │   │
+│  │  • Regeneration token coordination across panels                    │   │
+│  │  • Performance metrics collection via React Profiler                │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                     │                                       │
-│                                     │ generateData()                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                        PlotPanel.tsx                                 │   │
+│  │                                                                      │   │
+│  │  • Individual chart lifecycle (mount, regenerate, resize)           │   │
+│  │  • uPlot instance creation and updates                              │   │
+│  │  • Per-panel timing stats (generate, draw, memory)                  │   │
+│  │  • Status reporting to parent (loading, generating, idle)           │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                     │                                       │
+│                                     │ generatePoints()                      │
 │                                     ▼                                       │
 ├────────────────────────────────────────────────────────────────────────────┤
 │                             SCHEDULING LAYER                                │
 │                                                                             │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                        WorkerPool.js                                 │   │
+│  │                        workerPool.ts                                 │   │
 │  │                                                                      │   │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌──────────────────────────────┐│   │
 │  │  │   Worker    │  │   Request   │  │        Lifecycle             ││   │
@@ -556,7 +566,7 @@ worker.onmessage = (event) => {
 │  │              │  │              │  │              │  │              │   │
 │  │ pointGen     │  │ pointGen     │  │ pointGen     │  │ pointGen     │   │
 │  │ erator.      │  │ erator.      │  │ erator.      │  │ erator.      │   │
-│  │ worker.js    │  │ worker.js    │  │ worker.js    │  │ worker.js    │   │
+│  │ worker.ts    │  │ worker.ts    │  │ worker.ts    │  │ worker.ts    │   │
 │  │              │  │              │  │              │  │              │   │
 │  │ • xorshift   │  │ • xorshift   │  │ • xorshift   │  │ • xorshift   │   │
 │  │   PRNG       │  │   PRNG       │  │   PRNG       │  │   PRNG       │   │
@@ -566,6 +576,59 @@ worker.onmessage = (event) => {
 │                                                                             │
 │  Max workers: navigator.hardwareConcurrency (typically 4-16)               │
 └────────────────────────────────────────────────────────────────────────────┘
+```
+
+### UI Layout
+
+The application uses a three-region layout:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  ┌──────────────┐  ┌────────────────────────────────────────────────────┐  │
+│  │              │  │                                                    │  │
+│  │   SIDEBAR    │  │                    MAIN CONTENT                    │  │
+│  │              │  │                                                    │  │
+│  │  • Data      │  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐  │  │
+│  │    Format    │  │  │  Plot   │ │  Plot   │ │  Plot   │ │  Plot   │  │  │
+│  │  • Workers   │  │  │  Panel  │ │  Panel  │ │  Panel  │ │  Panel  │  │  │
+│  │  • Points    │  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘  │  │
+│  │  • Lines     │  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐  │  │
+│  │  • Panels    │  │  │  Plot   │ │  Plot   │ │  Plot   │ │  Plot   │  │  │
+│  │              │  │  │  Panel  │ │  Panel  │ │  Panel  │ │  Panel  │  │  │
+│  │  [Regenerate]│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘  │  │
+│  │              │  │                                                    │  │
+│  └──────────────┘  └────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │  FOOTER (sticky)                                                     │  │
+│  │  Workers: ● ● ● ○ ○   Active: 3   Idle: 0   Queue: 2   Pending: 5   │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+- **Sidebar**: Fixed 260px width, contains all controls, sticky on desktop
+- **Main Content**: Responsive grid of plot panels (1-4 columns based on viewport)
+- **Footer**: Sticky to bottom, shows real-time worker pool status
+
+### File Structure
+
+```
+src/
+├── main.tsx                          # React entry point
+├── App.tsx                           # Main app component (layout, state, controls)
+├── App.css                           # Layout and component styles
+├── index.css                         # Global styles and CSS variables
+├── types.ts                          # Shared TypeScript interfaces
+├── vite-env.d.ts                     # Vite type declarations
+├── components/
+│   └── PlotPanel.tsx                 # Individual chart panel component
+├── workers/
+│   ├── workerPool.ts                 # Worker pool scheduler and lifecycle
+│   └── pointGenerator.worker.ts      # Data generation worker (runs in separate thread)
+└── assets/
+    └── react.svg
 ```
 
 ### WorkerPool State Machine
@@ -791,7 +854,7 @@ worker.onmessage = (event) => {
 
 ## Implementation Deep Dive
 
-### Point Generator Worker (`pointGenerator.worker.js`)
+### Point Generator Worker (`pointGenerator.worker.ts`)
 
 #### Fast PRNG (Pseudo-Random Number Generator)
 
@@ -873,7 +936,7 @@ function generateData(points, lines, curveType, dataFormat = "float32") {
 3. Sequential access: Iterates through memory in order (cache-friendly)
 4. Minimal branching: Direct function call, no conditionals in loop
 
-### Worker Pool (`workerPool.js`)
+### Worker Pool (`workerPool.ts`)
 
 #### Lazy Spawning Strategy
 
@@ -958,6 +1021,114 @@ const timeoutId = setTimeout(() => {
 
 ---
 
+## Memory Measurement: DevTools vs Reality
+
+### The Discrepancy
+
+When running 56 panels with 100k points × 100 lines in Float64 format, you might observe:
+
+- **Panel stats show**: ~77MB per panel (56 × 77MB = 4.3GB total)
+- **DevTools Performance monitor shows**: ~24MB JS heap
+- **DevTools Heap Snapshot shows**: ~4.5GB retained size
+
+Why the massive difference?
+
+### Understanding V8's Memory Model
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     V8 Memory Architecture                                   │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                    JS Heap (what DevTools monitor shows)             │    │
+│  │                                                                      │    │
+│  │  • JavaScript objects                                               │    │
+│  │  • Closures, functions                                              │    │
+│  │  • TypedArray wrapper objects (small!)                              │    │
+│  │                                                                      │    │
+│  │  Float64Array object:    ~64 bytes (just metadata)                  │    │
+│  │  ┌────────────────────────────────────────────┐                     │    │
+│  │  │ length, byteOffset, byteLength, buffer ptr │                     │    │
+│  │  └─────────────────────────┬──────────────────┘                     │    │
+│  │                            │                                         │    │
+│  └────────────────────────────┼────────────────────────────────────────┘    │
+│                               │                                              │
+│                               ▼                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │              External Memory (ArrayBuffer backing stores)            │    │
+│  │                                                                      │    │
+│  │  • Allocated OUTSIDE the JS heap                                    │    │
+│  │  • Not shown in Performance monitor's "JS Heap Size"                │    │
+│  │  • IS shown in Heap Snapshot "Retained Size"                        │    │
+│  │                                                                      │    │
+│  │  ArrayBuffer backing store: 80MB (the actual float data)            │    │
+│  │  ┌────────────────────────────────────────────────────────────────┐ │    │
+│  │  │ ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ │ │    │
+│  │  │ 100,000 points × 100 lines × 8 bytes = 80,000,000 bytes        │ │    │
+│  │  └────────────────────────────────────────────────────────────────┘ │    │
+│  │                                                                      │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Where to Find Accurate Memory Data
+
+| Tool | What It Shows | Includes ArrayBuffer Data? |
+|------|---------------|---------------------------|
+| DevTools Performance Monitor → JS Heap | V8 managed heap only | ❌ No |
+| DevTools Memory → Heap Snapshot → Shallow Size | Object wrapper sizes | ❌ No |
+| DevTools Memory → Heap Snapshot → Retained Size | Total memory freed if object GC'd | ✅ Yes |
+| `performance.memory.usedJSHeapSize` | Same as Performance Monitor | ❌ No |
+
+### Reading a Heap Snapshot
+
+When you take a heap snapshot with large TypedArrays:
+
+```
+Constructor              Count    Shallow Size    Retained Size
+─────────────────────────────────────────────────────────────────
+Float64Array             5,656    339 kB          4,525,795 kB  ← Real memory!
+ArrayBuffer              5,667    657 kB          4,525,462 kB
+system / JSArrayBufferData  ...   4,524,800 kB    4,524,800 kB  ← Backing stores
+```
+
+- **Shallow Size**: The JS object wrapper (~60 bytes each)
+- **Retained Size**: Wrapper + backing store (the actual data)
+
+### Memory Calculation in This App
+
+The panel footer shows **calculated data size**, not measured heap usage:
+
+```typescript
+function calculateDataMemory(data) {
+  return data.reduce((total, arr) => {
+    if (arr.byteLength !== undefined) {
+      return total + arr.byteLength;  // TypedArray
+    } else if (Array.isArray(arr)) {
+      return total + arr.length * 8 + 24;  // Regular array estimate
+    }
+    return total;
+  }, 0);
+}
+```
+
+This reports the theoretical size of the data buffers, which matches what you'd see in heap snapshot retained sizes.
+
+### Data Lifecycle and Retention
+
+The data shown per-panel represents memory that **exists at render time** but may not persist:
+
+1. Worker generates Float64Array (80MB)
+2. Transfers to main thread via postMessage (zero-copy)
+3. Main thread wraps in new Float64Array view
+4. Passes to `uPlot.setData()`
+5. Local reference goes out of scope
+
+Whether the 80MB persists depends on whether uPlot retains a reference to your data arrays. If it doesn't, the memory becomes eligible for GC immediately after rendering.
+
+---
+
 ## Pros and Cons Analysis
 
 ### Advantages ✅
@@ -1011,9 +1182,9 @@ const timeoutId = setTimeout(() => {
 │              Performance: 1M points × 10 lines (Float32)                    │
 │                                                                              │
 │  Single Worker:                                                              │
-│  ├─ Data generation: ~45ms                                                  │
-│  ├─ Transfer time: <1ms                                                     │
-│  └─ uPlot render: ~8ms                                                      │
+│  ├─ Data generation (gen): ~45ms                                            │
+│  ├─ Transfer time: <1ms (zero-copy)                                         │
+│  └─ uPlot draw: ~8ms                                                        │
 │                                                                              │
 │  4 Workers (parallel, 4 panels):                                            │
 │  ├─ Total wall time: ~55ms (vs ~200ms sequential)                          │
@@ -1022,8 +1193,16 @@ const timeoutId = setTimeout(() => {
 │  Memory per panel:                                                           │
 │  ├─ Float32: (1 + 10) × 1M × 4 bytes = 44 MB                               │
 │  └─ Float64: (1 + 10) × 1M × 8 bytes = 88 MB                               │
+│                                                                              │
+│  Timing breakdown shown in panel footer:                                    │
+│  ├─ gen: Worker data generation time                                        │
+│  ├─ draw: uPlot setData/canvas command time                                 │
+│  ├─ react: React reconciliation time (from Profiler)                        │
+│  └─ memory: Calculated data buffer size                                     │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Note on paint timing**: Browser canvas paint/composite time is not measurable from JavaScript. The GPU rasterizes canvas commands asynchronously off the main thread. Use Chrome DevTools Performance panel for accurate paint metrics.
 
 ### Scaling Behavior
 

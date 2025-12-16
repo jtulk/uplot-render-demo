@@ -166,6 +166,7 @@ function App(): React.ReactElement {
 	const [inputNumLines, setInputNumLines] = useState(50);
 	const [inputMaxWorkers, setInputMaxWorkers] = useState(1);
 	const [inputNumPanels, setInputNumPanels] = useState(25);
+	const [inputPanelWidth, setInputPanelWidth] = useState(320);
 	const [dataFormat, setDataFormat] = useState<DataFormat>("float32");
 
 	const debouncedPointsIndex = useDebounce(inputPointsIndex, 400);
@@ -173,6 +174,7 @@ function App(): React.ReactElement {
 	const numLines = useDebounce(inputNumLines, 400);
 	const maxWorkers = useDebounce(inputMaxWorkers, 400);
 	const numPanels = useDebounce(inputNumPanels, 400);
+	const panelWidth = useDebounce(inputPanelWidth, 200);
 
 	// Regenerate token - increment to signal all panels to regenerate
 	// Starts at 1 so panels regenerate on mount
@@ -476,6 +478,24 @@ function App(): React.ReactElement {
 						</div>
 					</div>
 
+					<div className="control-group">
+						<label htmlFor="panelWidth">Panel Width</label>
+						<div className="slider-row">
+							<input
+								id="panelWidth"
+								type="range"
+								min="200"
+								max="600"
+								step="20"
+								value={inputPanelWidth}
+								onChange={(e: ChangeEvent<HTMLInputElement>) =>
+									setInputPanelWidth(parseInt(e.target.value))
+								}
+							/>
+							<span className="slider-value">{inputPanelWidth}px</span>
+						</div>
+					</div>
+
 					<button
 						className="regenerate-all-btn"
 						onClick={handleRegenerateAll}
@@ -496,7 +516,10 @@ function App(): React.ReactElement {
 
 			{/* Main Content - Plots Grid */}
 			<main className="main-content">
-				<div className="plots-grid">
+				<div
+					className="plots-grid"
+					style={{ "--panel-width": `${panelWidth}px` } as React.CSSProperties}
+				>
 					{Array.from({ length: numPanels }).map((_, index) => {
 						const curveType = CURVE_TYPES[index % CURVE_TYPES.length];
 						return (
