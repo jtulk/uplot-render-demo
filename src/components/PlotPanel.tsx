@@ -157,6 +157,7 @@ export interface PlotPanelProps {
 	lineStyles: LineStyle[];
 	workerPool: WorkerPool | null;
 	regenerateToken: number; // Increment to trigger regeneration
+	panelWidth: number; // Controls grid column width, triggers resize
 	onStatusChange?: (
 		index: number,
 		status: "loading" | "generating" | "idle",
@@ -178,6 +179,7 @@ export default function PlotPanel({
 	lineStyles,
 	workerPool,
 	regenerateToken,
+	panelWidth,
 	onStatusChange,
 	profilerStats,
 }: PlotPanelProps): React.ReactElement {
@@ -380,6 +382,20 @@ export default function PlotPanel({
 		};
 	}, []);
 
+	// Handle panelWidth changes - resize uPlot to fit new container dimensions
+	useEffect(() => {
+		// Use requestAnimationFrame to wait for CSS to apply the new grid column width
+		const rafId = requestAnimationFrame(() => {
+			if (plotRef.current && containerRef.current) {
+				const { width, height } = getContainerDimensions(containerRef.current);
+				if (width > 0 && height > 0) {
+					plotRef.current.setSize({ width, height });
+				}
+			}
+		});
+		return () => cancelAnimationFrame(rafId);
+	}, [panelWidth]);
+
 	// Manual regenerate button handler
 	const handleManualRegenerate = useCallback(() => {
 		doRegenerateRef.current();
@@ -390,18 +406,15 @@ export default function PlotPanel({
 	return (
 		<section className="plot-card" aria-label={`${title} plot`}>
 			<header className="plot-card__header">
-				<div className="plot-card__header-spacer" />
 				<div className="plot-card__title">{title}</div>
-				<div className="plot-card__actions">
-					<button
-						className="plot-card__regen"
-						onClick={handleManualRegenerate}
-						disabled={isGenerating || isLoading}
-						type="button"
-					>
-						{isGenerating || isLoading ? "Generating…" : "Regenerate"}
-					</button>
-				</div>
+				<button
+					className="plot-card__regen"
+					onClick={handleManualRegenerate}
+					disabled={isGenerating || isLoading}
+					type="button"
+				>
+					{isGenerating || isLoading ? "..." : "Regenerate"}
+				</button>
 			</header>
 
 			<div className="plot-card__body">
@@ -423,25 +436,25 @@ export default function PlotPanel({
 							<div className="plot-card__stat-breakdown">
 								{formatted.generateMs != null && (
 									<span className="plot-card__stat-chip plot-card__stat-chip--gen">
-										gen {formatted.generateMs}ms
+										{formatted.generateMs}ms
 									</span>
 								)}
 								{formatted.drawMs != null && (
 									<span className="plot-card__stat-chip plot-card__stat-chip--draw">
-										draw {formatted.drawMs}ms
+										{formatted.drawMs}ms
 									</span>
 								)}
 								{formatted.reactMs != null && (
 									<span className="plot-card__stat-chip plot-card__stat-chip--react">
-										react {formatted.reactMs}ms
+										{formatted.reactMs}ms
+									</span>
+								)}
+								{formatted.memory && (
+									<span className="plot-card__stat-chip plot-card__stat-chip--memory">
+										{formatted.memory}
 									</span>
 								)}
 							</div>
-							{formatted.memory && (
-								<span className="plot-card__stat-chip plot-card__stat-chip--memory">
-									{formatted.memory}
-								</span>
-							)}
 						</>
 					) : (
 						<div className="plot-card__stat-placeholder">—</div>

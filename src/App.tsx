@@ -538,6 +538,7 @@ function App(): React.ReactElement {
 									lineStyles={lineStyles}
 									workerPool={workerPoolRef.current}
 									regenerateToken={regenerateToken}
+									panelWidth={panelWidth}
 									onStatusChange={handlePanelStatusChange}
 									profilerStats={profilerDataRef.current[index]}
 								/>
